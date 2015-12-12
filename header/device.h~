@@ -1,0 +1,18 @@
+//device.h
+
+#ifndef __DEVICE_H
+#define __DEVICE_H
+
+#include <unordered_map>
+#include <string>
+
+class Device
+{
+private:
+	std::unordered_map<std::string,int> button;
+public:
+	void add_button(const std::string& _button_name);
+	int get_tiem(const std::string& _button_name) const;
+};
+
+#endif

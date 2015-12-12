@@ -1,0 +1,21 @@
+//bullet_behavior.h
+
+#include "bullet.h"
+
+namespace MyGameProject
+{
+	extern MyGameProject::Bullet::Behavior default_course;
+	extern MyGameProject::Bullet::Behavior course0;
+	extern MyGameProject::Bullet::Behavior course1;
+	extern MyGameProject::Bullet::Behavior course2;
+	extern MyGameProject::Bullet::Behavior course3;
+	extern MyGameProject::Bullet::Behavior course4;
+	extern MyGameProject::Bullet::Behavior course5;
+	extern MyGameProject::Bullet::Behavior course6;
+	extern MyGameProject::Bullet::Behavior course7;
+	extern MyGameProject::Bullet::Behavior course8;
+	extern MyGameProject::Bullet::Behavior course9;
+	extern MyGameProject::Bullet::Behavior course10;
+
+	
+}

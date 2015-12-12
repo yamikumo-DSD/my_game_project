@@ -1,0 +1,56 @@
+//hitbox.h
+
+#ifndef __HITBOX_H
+#define __HITBOX_H
+
+#include "mathematics.h"
+#include <boost/geometry/geometry.hpp>
+#include <boost/geometry.hpp>
+#include <boost/variant.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+
+namespace MyGameProject
+{
+	namespace ShapeElement
+	{
+		struct Null{};
+		struct Circle
+		{
+			Circle(void);
+			Circle(Real _radius);
+			Real radius; 
+		};
+		using Polygon = bg::model::polygon < Point2D > ;
+	}
+
+	using Shape = boost::variant<ShapeElement::Null, ShapeElement::Circle, ShapeElement::Polygon>;
+
+	struct PhysicalState
+	{
+		PhysicalState(void);
+		PhysicalState(Real _angle,const Point2D& _p);
+		Real angle;
+		Point2D p;
+	};
+
+	class HitBox
+	{
+	private:
+		Shape shape;
+		PhysicalState physical_state;
+	public:
+		HitBox(void);
+		HitBox(const Shape& _shape,const PhysicalState& _physical_state);
+		const Shape& get_shape(void) const;
+		Shape& get_shape(void);
+		const PhysicalState& get_physical_state(void) const;
+		PhysicalState& get_physical_state(void);
+	};
+
+	bool intersect(const PhysicalState& _state1, ShapeElement::Circle  _shape1,  const PhysicalState& _state2, ShapeElement::Circle  _shape2);
+	bool intersect(const PhysicalState& _state1, ShapeElement::Circle  _shape1,  const PhysicalState& _state2, ShapeElement::Polygon _shape2);
+	bool intersect(const PhysicalState& _state1, ShapeElement::Polygon _shape1,  const PhysicalState& _state2, ShapeElement::Circle  _shape2);
+	bool intersect(const PhysicalState& _state1, ShapeElement::Polygon _shape1,  const PhysicalState& _state2, ShapeElement::Polygon _shape2);
+}
+
+#endif

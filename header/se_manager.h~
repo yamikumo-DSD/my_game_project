@@ -1,0 +1,32 @@
+//se_manager.h
+
+#ifndef __SE_MANAGER_H
+#define __SE_MANAGER_H
+
+#include <vector>
+#include <utility>
+#include <string>
+#include <unordered_map>
+
+namespace MyGameProject
+{
+	class SEManager
+	{
+	private:
+		//string:name, int:handle, bool:flag
+		static std::unordered_map<std::string, std::pair<int, bool>>& data(void)
+		{
+			static std::unordered_map<std::string, std::pair<int, bool>> d;
+			return d;
+		}
+	public:
+		static void clear(void);
+		static void remove(const std::string& _name);
+		static void add(const std::string& _name);
+		static void play(int _loadness);
+		static void erect_play_flag_of(const std::string& _name);
+		static void break_play_flag_of(const std::string& _name);
+	};
+}
+
+#endif

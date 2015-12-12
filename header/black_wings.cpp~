@@ -1,0 +1,134 @@
+//black_wings.cpp
+
+#include "black_wings.h"
+#include "dxlib_wrapper.h"
+#include "color.h"
+#include "environmental_constants.h"
+#include "find_vacant_object.h"
+#include "ranged_uniform_random.h"
+#include "bullet.h"
+#include "bullet_behavior.h"
+#include <boost/math/constants/constants.hpp>
+#include "diffuse_point.h"
+#include "mathematics.h"
+#include "motion.h"
+#include "msgbox.h"
+#include <boost/lexical_cast.hpp>
+
+namespace
+{
+	using namespace boost::math::constants;
+}
+
+MyGameProject::BlackWings::BlackWings
+(
+BulletPtrContainer& _bullets,
+std::function<void(const std::string&)> _se_flag_setter,
+const Player& _player
+)
+:Boss(_bullets, _se_flag_setter, Point2D(WW<Real>() / 2, WH<Real>() + 30), 0, _player, ShapeElement::Circle(20)),
+health(1000),
+immortal_flag(true),
+left_or_right(true),
+dst(),
+v(0,0)
+{}
+
+void MyGameProject::BlackWings::hit(int _shot_power)
+{
+	if (!immortal_flag)
+	{
+		health -= _shot_power;
+	}
+}
+
+void MyGameProject::BlackWings::linear_motion(Point2D _departure,Point2D _destination, int _start_count, int _end_count)
+{
+	const auto count = get_count();
+	const auto motion = create_linear_motion_of_uniform_acceleration_2D(_departure, _destination, _end_count - _start_count);
+	if (count <= _end_count && count >= _start_count)
+	{
+		if (count == _start_count)
+		{ 
+			pos() = _departure;
+			v = motion.v0(); 
+		}
+		else
+		{ 
+			v = v + motion.a();
+			pos() = pos() + v;
+		}
+	}
+}
+
+void MyGameProject::BlackWings::custom_updater(void)
+{
+	const auto count = get_count();
+
+	//const auto motion = create_linear_motion_of_uniform_acceleration_2D(Point2D(WW<Real>() / 2, WH<Real>() + 30), Point2D(WW<Real>() / 2, 100),50);
+
+	if (count <= 50)
+	{
+		linear_motion(Point2D(WW<Real>() / 2, WH<Real>() + 30), Point2D(WW<Real>() / 2, 100), 1, 50);
+		if (count == 50)
+		{
+			immortal_flag = false;
+		}
+	}
+	else
+	{
+		if (health > 0)
+		{
+			if (count > 100 && count % 12 == 0)
+			{
+				gp::RangedUniformRandom generator(-pi<Real>(), pi<Real>());
+				Real r = static_cast<Real>(generator.rand());
+				static constexpr int N = 5;
+				for (int i = 0; i < N; ++i)
+				{
+					*find_vacant_object(get_bullets_ref()) = Bullet::create("Typical", *this, player_ref(), pos(), r + i * (2 * pi<Real>() / N), straight_course(4));
+				}
+				erect_se_flag_of("../../data/sound/enemy_shot.wav");
+			}
+
+				static constexpr bool left = true,right = false;
+
+				if (count >= 120)
+				{
+					if (count == 120)
+					{
+						left_or_right = left;
+						start_p = pos();
+						end_p = diffuse_point_rect(Point2D(100, 50), Point2D(150, 150));
+						start_cnt = count;
+						end_cnt = count + 50;
+					}
+					else
+					{
+						if (count % 120 == 0)
+						{
+							left_or_right = !left_or_right;
+							start_p = pos();
+							end_p = left_or_right == right? diffuse_point_rect(Point2D(100, 50), Point2D(150, 150)) : diffuse_point_rect(Point2D(WW<Real>() - 150, 50), Point2D(WW<Real>() - 100, 150));
+							start_cnt = count;
+							end_cnt = count + 50;
+						}
+					}
+					linear_motion(start_p, end_p,start_cnt,end_cnt);
+				}
+			
+		}
+	}
+}
+
+void MyGameProject::BlackWings::draw_charactor(void) const
+{
+	FunctionWrapper::DrawCircle(pos().x(),pos().y(),20,gp::black.get());
+}
+
+void MyGameProject::BlackWings::draw_health_bar(void) const
+{
+
+}
+
+MyGameProject::BlackWings::~BlackWings(void){}

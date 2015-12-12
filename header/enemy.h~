@@ -1,0 +1,21 @@
+//enemy.h
+
+#ifndef __ENEMY_H
+#define __ENEMY_H
+
+#include "object.h"
+
+namespace MyGameProject
+{
+	class Enemy : public MovingObject, public DynamicObject, public HitableObject
+	{
+	public:
+		Enemy();
+		virtual void draw(void) const override;
+		virtual void update(void) override;
+		static void preperation(void);
+		virtual ~Enemy(void);
+	};
+}
+
+#endif

@@ -1,0 +1,44 @@
+//motion.h
+
+#ifndef __MOTION_H
+#define __MOTION_H
+
+#include <cmath>
+
+namespace MyGameProject
+{
+	template<class VectorType,class TimeType>
+	inline VectorType acceleration2D(const VectorType& _departure,const VectorType& _destination,const VectorType& _v0,TimeType _dt)
+	{
+		using CoordType = decltype(_departure.x());
+		using namespace std;
+
+		const CoordType ax = 2 * (_v0.x() * _dt - (_destination.x() - _departure.x())) / pow(_dt,2);
+		const CoordType ay = 2 * (_v0.y() * _dt - (_destination.y() - _departure.y())) / pow(_dt,2);
+
+		return VectorType(ax,ay);
+	}
+
+	template<class Vector2D,class TimeType>
+	class LinearMotionOfUniformAcceleration2D
+	{
+	private:
+		using namespace std;
+		const 2DVector dpt;
+		const 2DVector dst;
+		const TimeType term;
+	public:
+		LinearMotionOfUniformAcceleration(const 2DVector& _start_point, const 2DVector& _end_point, TimeType _dt)
+			:dpt(_start_point), dst(_end_point), term(_dt){}
+		2DVector v0(void) const
+		{
+			return 2DVector((dst - dpt).x() * (2 / term), (dst - dpt).y() * (2 / term));
+		}
+		2DVector a(void) const
+		{
+			return 2DVector((dst - dpt).x() * (-2 / pow(term, 2)), (dst - dpt).x() * (-2 / pow(term, 2)));
+		}
+	};
+}
+
+#endif

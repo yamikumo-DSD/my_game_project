@@ -1,0 +1,25 @@
+//mob_enemy.h
+
+#ifndef __MOB_ENEMY_H
+#define __MOB_ENEMY_H
+
+#include "enemy.h"
+
+namespace MyGameProject
+{
+	class MobEnemy : public enemy
+	{
+	private:
+		int health;
+	public:
+		MobEnemy(const Point2D& _p, ActPattern _act_pattern, const Player& _player, const HitBox& _hitbox);
+		virtual void draw(void) const = 0;
+		virtual void update_interface(void) = 0;
+		int get_count(void) const;
+		const Player& player_ref(void) const;
+		virtual void update(void) override;
+		virtual ~Enemy(void);
+	};
+}
+
+#endif
