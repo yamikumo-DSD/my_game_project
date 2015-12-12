@@ -1,0 +1,18 @@
+//option.cpp
+
+#include "option.h"
+#include "player.h"
+
+MyGameProject::Option::Option(const Player& _player,const Point2D _p)
+	:player(_player),MovingObject(_p),count(0),angle(0)
+{}
+
+void MyGameProject::Option::draw(void) const
+{
+}
+
+void MyGameProject::Option::update(void) 
+{
+}
+
+MyGameProject::Option::~Option(void){}

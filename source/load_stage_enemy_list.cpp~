@@ -1,0 +1,85 @@
+//load_stage_enemy_list.cpp
+
+#include "play_game.h"
+#include <fstream>
+#include <exception>
+#include "enemy_order.h"
+#include "enemy_order_parser.h"
+#include "msgbox.h"
+
+#if 0
+
+void MyGameProject::PlayGame::load_stage_enemy_list(int _stage_num)
+{
+	std::ifstream ifs;
+	if (_stage_num == 0){ ifs.open("../../data/map/stage0.csv"); }
+
+	if (ifs)
+	{
+		std::vector<std::string> lines;
+		std::string current_line;
+
+		if (!ifs.eof()){ ifs >> current_line; }
+		while (!ifs.eof())
+		{
+			ifs >> current_line;
+			lines.push_back(current_line);
+		}
+
+		for (const auto& line : lines)
+		{
+			enemy_orders.push_back(string_to_enemy_order(line));
+		}
+	}
+	else
+	{
+		throw std::runtime_error("No stage map file.");
+	}
+}
+#endif
+
+#if 1
+
+void MyGameProject::PlayGame::load_stage_enemy_list(int _stage_num)
+{
+	std::ifstream ifs;
+	if (_stage_num == 0){ ifs.open("../../data/map/stage0.data"); }
+	std::string raw_text;
+
+	if (ifs)
+	{
+		std::string current_line;
+		while(!ifs.eof())
+		{
+			std::getline(ifs,current_line);
+			raw_text += current_line;
+		}
+	}
+	else
+	{
+		throw std::runtime_error("No stage map file.");
+	}
+
+	msgbox_ok(raw_text.c_str());
+
+	AST::EnemyOrderList enemy_order_list;
+
+	if
+		(
+		qi::phrase_parse
+		(
+		raw_text.begin(),
+		raw_text.end(),
+		Parser::EnemyOrderList<decltype(raw_text.begin())>(),
+		ascii::space,
+		enemy_order_list
+		)
+		)
+	{
+	}
+
+	enemy_orders = Exec::process(enemy_order_list);
+}
+
+
+#endif

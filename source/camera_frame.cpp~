@@ -1,0 +1,49 @@
+//camera_frame.cpp
+
+#include "camera_frame.h"
+
+#include "dxlib_wrapper.h"
+#include "image_pool.h"
+#include <boost/math/constants/constants.hpp>
+#include "environmental_constants.h"
+
+namespace
+{
+	using namespace boost::math::constants;
+}
+
+void MyGameProject::CameraFrame::custom_updater(void)
+{
+	if (get_count() == 150){ area().get_shape(); }
+	if (get_count() == 160){ set_flag_off(); }
+}
+
+MyGameProject::CameraFrame::CameraFrame
+(
+const Enemy& _master,
+const Player& _player,
+const Point2D& _initial_pos,
+Real _initial_angle,
+Behavior _behavior
+)
+:Bullet(_master, _player, _initial_pos, _initial_angle, ShapeElement::Null(), _behavior)
+{}
+
+void MyGameProject::CameraFrame::draw(void) const
+{
+	FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), 1.0,0.0, ImagePool::get("../../data/img/camera_frame.png"), TRUE);
+}
+
+MyGameProject::CameraFrame::~CameraFrame(void)
+{}
+
+void MyGameProject::CameraFrame::preperation(void)
+{
+	rect().inners().push_back(Point2D(-200,-150));
+	rect().inners().push_back();
+	rect().inners().push_back();
+	rect().inners().push_back();
+	rect().inners().push_back();
+	ImagePool::add("../../data/img/camera_frame.png");
+}
+

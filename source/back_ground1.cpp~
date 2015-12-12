@@ -1,0 +1,53 @@
+//back_ground1.cpp
+
+#include "back_ground1.h"
+#include "image_pool.h"
+#include "dxlib_wrapper.h"
+
+MyGameProject::Cloud::Cloud(const Point2D& _initial_pos)
+	:MovingObject(_initial_pos)
+{}
+
+void MyGameProject::Cloud::update(void)
+{
+	pos().y(pos().y() - static_cast<Real>(0.1));
+}
+
+void MyGameProject::Cloud::draw(void) const
+{
+	FunctionWrapper::DrawRotaGraph(pos().x(),pos().y(),0.5,0,ImagePool::get("../../data/img/cloud.png"),TRUE);
+}
+
+void MyGameProject::Cloud::preperation(void)
+{
+	ImagePool::add("../../data/img/cloud.png");
+}
+
+MyGameProject::Cloud::~Cloud(void){}
+
+MyGameProject::BackGround1::BackGround1(void)
+	:clouds()
+{}
+
+void MyGameProject::BackGround1::custom_updater(void)
+{ 
+	for(auto& cloud : clouds)
+	{
+		if(cloud)
+		{
+			if(cloud->get_flag()){ cloud->update();}
+			else{cloud.reset();}
+		}
+	}
+}
+
+
+void MyGameProject::BackGround1::draw(void) const
+{ 
+	for(const auto& cloud : clouds)
+	{
+		if(cloud){cloud->draw();}
+	}
+}
+
+MyGameProject::BackGround1::~BackGround1(void){}

@@ -1,0 +1,102 @@
+//title_bg_drawer.cpp
+
+#include "title_bg_drawer.h"
+#include "title.h"
+#include "image_pool.h"
+#include "dxlib_wrapper.h"
+#include <boost/math/constants/constants.hpp>
+
+namespace
+{
+	using namespace boost::math::constants;
+	using namespace MyGameProject;
+
+	template<class RealType>
+	RealType theta(RealType OH, RealType distance_to_object, RealType visual_distance)
+	{
+		using namespace std;
+		return atan(OH / (distance_to_object + visual_distance));
+	}
+}
+
+MyGameProject::TitleBGDrawer::Tile::Tile(Real _angle)
+	:angle(_angle),
+	p(),
+	distance(3400)
+{}
+
+MyGameProject::Real MyGameProject::Tile::get_angle(void) const
+{
+	return angle;
+}
+
+void MyGameProject::Tile::update(void)
+{
+	static constexpr Real scroll_speed = static_cast<Real>(12);
+	static constexpr Real OD = 3000;
+	static constexpr Real d = OD + WW_2<Real>();
+	static constexpr Real k = 0.5;
+
+	angle = theta(WH<Real>(), distance, OD);
+
+	// lower left
+	p[1].x((WW_2<Real>() * k - d * tan(angle)) / (k - tan(angle)));
+	p[1].y(-k * p[1].x() + WW_2<Real>() * k);
+	// upper right
+	p[2].x((WW_2<Real>() * k + d * tan(angle)) / (k + tan(angle)));
+	p[2].y(k * p[2].x() - WW_2<Real>() * k);
+	// lower right
+	p[0].x(WW<Real>() - p[1].x());
+	p[0].y(p[1].y());
+	// upper left
+	p[3].x(WW<Real>() - p[2].x());
+	p[3].y(p[2].y());
+
+	if (p[3].y() < WH<Real>())distance -= scroll_speed;
+	else{ set_flag_off(); }
+}
+
+void MyGameProject::Tile::draw(void) const
+{
+	FunctionWrapper::DrawModiGraph
+		(
+		p[3].x(), p[3].y(), // upper left
+		p[2].x(), p[2].y(), // upper right
+		p[0].x(), p[0].y(), // lower right
+		p[1].x(), p[1].y(), // lower left
+		ImagePool::get("../../data/img/sky_00009.jpg"),
+		FALSE
+		);
+}
+
+void MyGameProject::Tile::preperation(void)
+{
+	ImagePool::add("../../data/img/back_ground1.jpg");
+}
+
+MyGameProject::TitleBGDrawer::Tile::~Tile(void){}
+
+MyGameProject::TitleBGDrawer::TitleBGDrawer(const Title& _title)
+	:title(_title),
+	img(0),
+	count(0)
+{
+}
+
+void MyGameProject::TitleBGDrawer::draw(void) const
+{
+	DrawGraph(0, 0, img, FALSE);
+}
+
+void MyGameProject::TitleBGDrawer::update(void)
+{
+	if (count == 0){img = ImagePool::get("../../data/img/back_ground1.jpg"); }
+	++count;
+}
+
+void MyGameProject::TitleBGDrawer::preperation(void)
+{
+	Tile::preperation();
+	//ImagePool::add("../../data/img/back_ground1.jpg");
+}
+

@@ -1,0 +1,47 @@
+//enemy_order_parser.cpp
+
+#include "enemy_order_parser.h"
+#include "enemy_order.h"
+#include "enemy_act_pattern.h"
+#include "play_game.h"
+
+gp::smart_ptr<MyGameProject::CodeList> 
+MyGameProject::Converter::process(const AST::EnemyOrderList& _enemy_order_list)
+{
+	auto result = gp::make_smart<CodeList>();
+
+	for (const auto& order : _enemy_order_list)
+	{
+		result->push_front
+		(
+			CreateMob
+			({
+				order.name,
+				order.register_time,
+				order.initial_pos.x,
+				order.initial_pos.y,
+				order.initial_angle,
+				order.act_pattern
+			})
+		);
+	}
+
+	return result;
+}
+
+MyGameProject::Converter::Processor::Processor(CodeList& _code_list)
+	:code_list(_code_list)
+{}
+
+void MyGameProject::Converter::Processor::process(const AST::OrderList& _order_list)
+{
+}
+void MyGameProject::Converter::Processor::operator()(const AST::EnemyOrder& _enemy_order)
+{
+}
+void MyGameProject::Converter::Processor::operator()(const AST::BossOrder& _boss_order)
+{
+}
+void MyGameProject::Converter::Processor::operator()(const AST::Order& _order)
+{
+}

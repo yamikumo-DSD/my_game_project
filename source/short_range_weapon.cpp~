@@ -1,0 +1,33 @@
+//short_range_weapon.cpp
+
+#include "short_range_weapon.h"
+#include <boost/math/constants/constants.hpp>
+#include "image_pool.h"
+
+namespace
+{
+	using namespace boost::math::constants;
+}
+
+MyGameProject::ShortRangeWeapon::ShortRangeWeapon(Real _angle, const Point2D& _p)
+	:angle(0), MovingObject(_p), HitableObject(HitBox(ShapeElement::Circle(250), PhysicalState(0,_p)))
+{}
+
+void MyGameProject::Shot::draw(void) const
+{
+	FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), 2.0, angle + pi<Real>() / 2, ImagePool::get("../../data/img/shot.png"), TRUE);
+}
+
+void MyGameProject::Shot::update(void)
+{
+}
+
+MyGameProject::ShortRangeWeapon::~ShortRangeWeapon(void){}
+
+void MyGameProject::ShortRangeWeapon::preperation(void)
+{
+	//Load images.
+	ImagePool::add("../../data/img/circle_0.png");
+	ImagePool::add("../../data/img/circle_1.png");
+	ImagePool::add("../../data/img/circle_2.png");
+}

@@ -1,0 +1,31 @@
+//typical.cpp
+
+#include "typical.h"
+#include "dxlib_wrapper.h"
+#include "color.h"
+
+void MyGameProject::Typical::custom_updater(void)
+{}
+
+MyGameProject::Typical::Typical
+(
+const Enemy& _master,
+const Player& _player,
+const Point2D& _initial_pos,
+Real _initial_angle,
+Behavior _behavior
+)
+:Bullet(_master, _player, _initial_pos, _initial_angle, ShapeElement::Circle(10), _behavior)
+{}
+
+void MyGameProject::Typical::draw(void) const
+{
+	FunctionWrapper::DrawCircle(pos().x(), pos().y(), 10, gp::sky.get());
+}
+
+MyGameProject::Typical::~Typical(void)
+{}
+
+void MyGameProject::Typical::preperation(void)
+{}
+

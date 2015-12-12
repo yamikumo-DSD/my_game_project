@@ -1,0 +1,484 @@
+//shot.cpp
+
+#include "shot.h"
+#include "hitbox.h"
+#include <cmath>
+#include "image_pool.h"
+#include "dxlib_wrapper.h"
+#include <boost/math/constants/constants.hpp>
+#include "enemy.h"
+#include "color.h"
+#include "drawblendmode.h"
+#include "msgbox.h"
+
+namespace
+{
+	using namespace boost::math::constants;
+}
+
+MyGameProject::Shot::Shot(const Shape& _shape,int _pow, Real _angle, const Point2D& _p)
+	:ang(_angle - pi<Real>() / 2),
+	MovingObject(_p),
+	HitableObject(HitBox(_shape, PhysicalState(0, _p))),
+	pow(_pow)
+{}
+
+void MyGameProject::Shot::update(void)
+{
+	custom_updater();
+	area().get_physical_state().p = pos();
+}
+
+int MyGameProject::Shot::power(void) const
+{
+	return pow;
+}
+
+MyGameProject::Real MyGameProject::Shot::angle(void) const
+{
+	return ang;
+}
+
+void MyGameProject::Shot::angle(Real _angle)
+{
+	ang = _angle;
+}
+
+MyGameProject::Shot::~Shot(void){}
+
+void MyGameProject::Shot::preperation(void)
+{
+	NormalShot::preperation();
+	HyperShot2::preperation();
+	HomingShot::preperation();
+}
+
+
+
+MyGameProject::NormalShot::NormalShot(Real _angle,const Point2D& _p)
+	:Shot(ShapeElement::Circle(15),10,_angle,_p),
+	hit_flag(false),
+	hit_moment(0),
+	count(0)
+{}
+
+void MyGameProject::NormalShot::draw(void) const
+{
+	if (!hit_flag){ FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), 2.0, angle() + pi<Real>() / 2, ImagePool::get("../../data/img/shot.png"), TRUE); }
+	else{ FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), 2.0, angle() + pi<Real>() / 2, ImagePool::get("../../data/img/shot_active.png"), TRUE); }
+}
+
+void MyGameProject::NormalShot::hit(void)
+{
+	hit_flag = true;
+	if (!hit_flag){ hit_moment = count; }
+}
+
+void MyGameProject::NormalShot::custom_updater(void) 
+{
+	static constexpr MyGameProject::Real SHOT_VELOCITY = 15.0;
+
+	if (!hit_flag)
+	{
+		const auto x = pos().x(), y = pos().y();
+		pos().x(x + SHOT_VELOCITY * std::cos(angle()));
+		pos().y(y + SHOT_VELOCITY * std::sin(angle()));
+		if (x < -100 || x > 640 + 100 || y < -100 || y > 480 + 100)
+		{
+			set_flag_off();
+		}
+	}
+	else
+	{
+		if (count > hit_moment + 10){ set_flag_off(); }
+	}
+
+	++count;
+}
+
+MyGameProject::NormalShot::~NormalShot(void){}
+
+void MyGameProject::NormalShot::preperation(void)
+{
+	//Load images.
+	ImagePool::add("../../data/img/shot.png");
+	ImagePool::add("../../data/img/shot_active.png");
+}
+
+MyGameProject::HyperShot2::HyperShot2(Real _angle,const Point2D& _p)
+	:Shot(ShapeElement::Circle(15),13,_angle,_p),
+	hit_flag(false),
+	hit_moment(0),
+	count(0)
+{}
+
+void MyGameProject::HyperShot2::draw(void) const
+{
+	ScopedDrawBlendMode blend(DX_BLENDMODE_ADD,255);
+	if (!hit_flag){ FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), 0.55, angle() + pi<Real>() / 2, ImagePool::get("../../data/img/shot2.png"), TRUE); }
+	else{ FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), 0.55, angle() + pi<Real>() / 2, ImagePool::get("../../data/img/shot_active.png"), TRUE); }
+}
+
+void MyGameProject::HyperShot2::hit(void)
+{
+	hit_flag = true;
+	if (!hit_flag){ hit_moment = count; }
+}
+
+void MyGameProject::HyperShot2::custom_updater(void) 
+{
+	static constexpr MyGameProject::Real SHOT_VELOCITY = 15.0;
+
+	if (!hit_flag)
+	{
+		const auto x = pos().x(), y = pos().y();
+		pos().x(x + SHOT_VELOCITY * std::cos(angle()));
+		pos().y(y + SHOT_VELOCITY * std::sin(angle()));
+		if (x < -100 || x > 640 + 100 || y < -100 || y > 480 + 100)
+		{
+			set_flag_off();
+		}
+	}
+	else
+	{
+		if (count > hit_moment + 10){ set_flag_off(); }
+	}
+
+	++count;
+}
+
+MyGameProject::HyperShot2::~HyperShot2(void){}
+
+void MyGameProject::HyperShot2::preperation(void)
+{
+	//Load images.
+	ImagePool::add("../../data/img/shot2.png");
+	ImagePool::add("../../data/img/shot_active.png");
+}
+
+MyGameProject::HomingShot::HomingShot(std::function<gp::smart_ptr<Enemy>(HomingShot&)> _find_target,Real _angle, const Point2D& _p)
+	:Shot(ShapeElement::Circle(20), 1,_angle, _p),
+	target(),
+	find_target(_find_target),
+	hit_flag(false),
+	mag(0.7),
+	brt(255),
+	rot(0),
+	count(0),
+	color_type(0)
+{}
+
+MyGameProject::HomingShot::HomingShot(std::function<gp::smart_ptr<Enemy>(HomingShot&)> _find_target, Real _angle, const Point2D& _p,int _color_type)
+	:Shot(ShapeElement::Circle(20), 1, _angle, _p),
+	target(),
+	find_target(_find_target),
+	hit_flag(false),
+	mag(0.7),
+	brt(255),
+	rot(0),
+	count(0),
+	color_type(_color_type)
+{}
+
+void MyGameProject::HomingShot::draw(void) const
+{
+	int i = 0;
+
+	for (const auto& p : trail)
+	{
+		ScopedDrawBlendMode blend(DX_BLENDMODE_ADD, 255 - 20 * i++);
+		switch (color_type)
+		{
+		case 0:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, rot, ImagePool::get("../../data/img/white_ball_green.png"), TRUE); break;
+		case 1:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, rot, ImagePool::get("../../data/img/white_ball_yellow.png"), TRUE); break;
+		case 2:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, rot, ImagePool::get("../../data/img/white_ball_red.png"), TRUE); break;
+		case 3:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, rot, ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+		case 4:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, rot, ImagePool::get("../../data/img/white_ball_white.png"), TRUE); break;
+		default:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, rot, ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+		}
+	}
+#if 0
+	for (int i = trail.size() - 3; i >= 0; --i)
+	{
+		ScopedDrawBlendMode b(DX_BLENDMODE_ADD, 200);
+
+		const Point2D OM0((trail[i].x() + trail[i + 1].x()) / 2, (trail[i].y() + trail[i + 1].y()) / 2);
+		const Point2D OM1((trail[i + 1].x() + trail[i + 2].x()) / 2, (trail[i + 1].y() + trail[i + 2].y()) / 2);
+
+		DrawModiGraph
+			(
+			OM0.x() + MX[i][0].x(), OM0.y() + MX[i][0].y(), 
+			OM0.x() + MX[i][1].x(), OM0.y() + MX[i][1].y(),
+			OM1.x() + MX[i + 1][1].x(), OM1.y() + MX[i + 1][1].y(),
+			OM1.x() + MX[i + 1][0].x(), OM1.y() + MX[i + 1][0].y(),
+			ImagePool::get("../../data/img/tail_green.png"),
+			true
+			);
+	}
+#endif
+
+	gp::ScopedDrawBlendMode blend(DX_BLENDMODE_ADD, brt);
+	switch (color_type)
+	{
+	case 0:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_green.png"), TRUE); break;
+	case 1:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_yellow.png"), TRUE); break;
+	case 2:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_red.png"), TRUE); break;
+	case 3:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+	case 4:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_white.png"), TRUE); break;
+	default:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+	}
+}
+
+void MyGameProject::HomingShot::hit(void)
+{
+	hit_flag = true;
+}
+
+void MyGameProject::HomingShot::custom_updater(void)
+{
+	if (count == 0){ for (auto& p : trail){ p = pos(); } }
+	else
+	{
+		for (int i = trail.size() - 1; i != 0; --i)
+		{
+			trail[i] = trail[i - 1];
+		}
+#if 0
+		Real W = 0;
+		for (int i = trail.size() - 2; i > 0; --i)
+		{
+			const auto theta = angle_of(trail[i] - trail[i + 1]);
+			MX[i][0].x((W / 2) * cos(theta + half_pi<Real>())); MX[i][0].y((W / 2) * sin(theta + half_pi<Real>()));
+			MX[i][1].x((W / 2) * cos(theta - half_pi<Real>())); MX[i][1].y((W / 2) * sin(theta - half_pi<Real>()));
+			W += 4.7;
+		}
+#endif
+	}
+
+	MyGameProject::Real speed = 15.0;
+
+	if (!hit_flag)
+	{
+		const auto x = pos().x(), y = pos().y();
+
+		target = find_target(*this);
+		
+		if (target)
+		{
+			if (count > 20){ speed = 30; }
+			auto omega = 0.2; if (count > 30 && count < 100){ omega += (count - 30) * static_cast<Real>(0.002); }
+
+			Real theta = angle_of(target->pos() - pos());
+
+			if (count < 100)
+			{
+				if (abs(angle() - theta) >= omega)
+				{
+					if (sin(angle() - theta) <= 0){ angle(angle() + omega); }
+					else{ angle(angle() - omega); }
+				}
+				else{ angle(theta); }
+			}
+		}
+		pos().x(x + speed * std::cos(angle()));
+		pos().y(y + speed * std::sin(angle()));
+
+		trail[0] = pos();
+#if 0
+		const auto theta = angle_of(trail[0] - trail[1]);
+		MX[0][0].x((53 / 2) * cos(theta + half_pi<Real>())); MX[0][0].y((53 / 2) * sin(theta + half_pi<Real>()));
+		MX[0][1].x((53 / 2) * cos(theta - half_pi<Real>())); MX[0][1].y((53 / 2) * sin(theta - half_pi<Real>()));
+#endif
+		if (x < -100 || x > 640 + 100 || y < -100 || y > 480 + 100)
+		{
+			set_flag_off();
+		}
+	}
+	else
+	{
+		set_flag_off();
+	}
+
+	++count;
+}
+
+MyGameProject::HomingShot::~HomingShot(void){}
+
+void MyGameProject::HomingShot::preperation(void)
+{
+	ImagePool::add("../../data/img/hyper_shot.png");
+	ImagePool::add("../../data/img/white_ball_green.png"); ImagePool::add("../../data/img/tail_green.png");
+	ImagePool::add("../../data/img/white_ball_red.png");
+	ImagePool::add("../../data/img/white_ball_black.png");
+	ImagePool::add("../../data/img/white_ball_white.png");
+	ImagePool::add("../../data/img/white_ball_yellow.png");
+}
+
+MyGameProject::HomingLazer::HomingLazer(std::function<gp::smart_ptr<Enemy>(HomingLazer&)> _find_target, Real _angle, const Point2D& _p, int _color_type)
+	:Shot(ShapeElement::Circle(20), 1, _angle, _p),
+	target(),
+	find_target(_find_target),
+	hit_flag(false),
+	mag(0.7),
+	brt(255),
+	rot(0),
+	count(0),
+	color_type(_color_type)
+{}
+
+void MyGameProject::HomingLazer::draw(void) const
+{
+	int i = 0;
+
+	for (const auto& p : trail)
+	{
+		ScopedDrawBlendMode blend(DX_BLENDMODE_ADD, 255 - 20 * i++);
+		switch (color_type)
+		{
+		case 0:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i,angle(), ImagePool::get("../../data/img/white_ball_green.png"), TRUE); break;
+		case 1:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, angle(), ImagePool::get("../../data/img/white_ball_yellow.png"), TRUE); break;
+		case 2:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, angle(), ImagePool::get("../../data/img/white_ball_red.png"), TRUE); break;
+		case 3:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, angle(), ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+		case 4:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, angle(), ImagePool::get("../../data/img/white_ball_white.png"), TRUE); break;
+		default:
+			FunctionWrapper::DrawRotaGraph(p.x(), p.y(), 0.7 - 0.04 * i, angle(), ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+		}
+	}
+
+	for (int i = trail.size() - 3; i >= 0; --i)
+	{
+		ScopedDrawBlendMode b(DX_BLENDMODE_ADD, 200);
+
+		const Point2D OM0((trail[i].x() + trail[i + 1].x()) / 2, (trail[i].y() + trail[i + 1].y()) / 2);
+		const Point2D OM1((trail[i + 1].x() + trail[i + 2].x()) / 2, (trail[i + 1].y() + trail[i + 2].y()) / 2);
+
+		DrawModiGraph
+			(
+			OM0.x() + MX[i][0].x(), OM0.y() + MX[i][0].y(),
+			OM0.x() + MX[i][1].x(), OM0.y() + MX[i][1].y(),
+			OM1.x() + MX[i + 1][1].x(), OM1.y() + MX[i + 1][1].y(),
+			OM1.x() + MX[i + 1][0].x(), OM1.y() + MX[i + 1][0].y(),
+			ImagePool::get("../../data/img/tail_green.png"),
+			true
+			);
+	}
+
+	gp::ScopedDrawBlendMode blend(DX_BLENDMODE_ADD, brt);
+	switch (color_type)
+	{
+	case 0:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_green.png"), TRUE); break;
+	case 1:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_yellow.png"), TRUE); break;
+	case 2:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_red.png"), TRUE); break;
+	case 3:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+	case 4:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_white.png"), TRUE); break;
+	default:
+		FunctionWrapper::DrawRotaGraph(pos().x(), pos().y(), mag, rot, ImagePool::get("../../data/img/white_ball_black.png"), TRUE); break;
+	}
+}
+
+void MyGameProject::HomingLazer::hit(void)
+{
+	hit_flag = true;
+}
+
+void MyGameProject::HomingLazer::custom_updater(void)
+{
+	if (count == 0){ for (auto& p : trail){ p = pos(); } }
+	else
+	{
+		for (int i = trail.size() - 1; i != 0; --i)
+		{
+			trail[i] = trail[i - 1];
+		}
+
+		Real W = 0;
+		for (int i = trail.size() - 2; i > 0; --i)
+		{
+			const auto theta = angle_of(trail[i] - trail[i + 1]);
+			MX[i][0].x((W / 2) * cos(theta + half_pi<Real>())); MX[i][0].y((W / 2) * sin(theta + half_pi<Real>()));
+			MX[i][1].x((W / 2) * cos(theta - half_pi<Real>())); MX[i][1].y((W / 2) * sin(theta - half_pi<Real>()));
+			W += 0.2;
+		}
+	}
+
+	MyGameProject::Real speed = 15.0;
+
+	if (!hit_flag)
+	{
+		const auto x = pos().x(), y = pos().y();
+
+		target = find_target(*this);
+
+		if (target)
+		{
+			if (count > 20){ speed = 30; }
+			auto omega = 0.2; if (count > 30 && count < 100){ omega += (count - 30) * static_cast<Real>(0.002); }
+
+			Real theta = angle_of(target->pos() - pos());
+
+			if (count < 100)
+			{
+				if (abs(angle() - theta) >= omega)
+				{
+					if (sin(angle() - theta) <= 0){ angle(angle() + omega); }
+					else{ angle(angle() - omega); }
+				}
+				else{ angle(theta); }
+			}
+		}
+		pos().x(x + speed * std::cos(angle()));
+		pos().y(y + speed * std::sin(angle()));
+
+		trail[0] = pos();
+
+		const auto theta = angle_of(trail[0] - trail[1]);
+		MX[0][0].x((53 / 2) * cos(theta + half_pi<Real>())); MX[0][0].y((53 / 2) * sin(theta + half_pi<Real>()));
+		MX[0][1].x((53 / 2) * cos(theta - half_pi<Real>())); MX[0][1].y((53 / 2) * sin(theta - half_pi<Real>()));
+
+		if (x < -100 || x > 640 + 100 || y < -100 || y > 480 + 100)
+		{
+			set_flag_off();
+		}
+	}
+	else
+	{
+		set_flag_off();
+	}
+
+	++count;
+}
+
+MyGameProject::HomingLazer::~HomingLazer(void){}
+
+void MyGameProject::HomingLazer::preperation(void)
+{
+	ImagePool::add("../../data/img/hyper_shot.png");
+	ImagePool::add("../../data/img/white_ball_green.png"); ImagePool::add("../../data/img/tail_green.png");
+	ImagePool::add("../../data/img/white_ball_red.png");
+	ImagePool::add("../../data/img/white_ball_black.png");
+	ImagePool::add("../../data/img/white_ball_white.png");
+	ImagePool::add("../../data/img/white_ball_yellow.png");
+}
+
